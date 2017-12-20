@@ -46,6 +46,7 @@ def svm_loss_naive(W, X, y, reg):
   # Add regularization to the loss.
   loss += reg * np.sum(W * W)
   dW += 2 * reg * W
+
   #############################################################################
   # TODO:                                                                     #
   # Compute the gradient of the loss function and store it dW.                #
@@ -73,7 +74,22 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+  #pass
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+  scores = X.dot(W)
+  scores_correct = scores[np.arange(num_train), y]
+  scores_correct = np.reshape(scores_correct, (num_train, 1))
+  margins = scores - scores_correct + 1
+  margins[np.arange(num_train), y] = 0.0
+  margins[margins < 0] = 0.0
+  loss = np.sum(margins) / num_train
+  loss += reg * np.sum(W * W)
+  margins[margins > 0] = 1.0
+  row_sum = np.sum(margins, axis=1)
+  margins[np.arange(num_train), y] = -row_sum
+  dW = np.dot(X.T, margins) / num_train + 2 * reg * W
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -88,7 +104,7 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+  # pass
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
