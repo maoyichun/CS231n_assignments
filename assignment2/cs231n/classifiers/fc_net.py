@@ -84,7 +84,7 @@ class TwoLayerNet(object):
         # pass
         W1, b1 = self.params['W1'], self.params['b1']
         W2, b2 = self.params['W2'], self.params['b2']
-        N, D = X.shape
+        # N, D = X.shape
         reg = self.reg
 
         a1out, a1cache = affine_relu_forward(X, W1, b1)
@@ -190,7 +190,17 @@ class FullyConnectedNet(object):
         # beta2, etc. Scale parameters should be initialized to one and shift      #
         # parameters should be initialized to zero.                                #
         ############################################################################
-        pass
+        # pass
+        layer_input_dim = input_dim
+        for i, hd in hidden_dims:
+            self.params['W%d' % (i + 1)] = weight_scale * np.random.randn(layer_input_dim, hd)
+            self.params['b%d' % (i + 1)] = np.zeros(hd)
+            if self.use_batchnorm:
+                self.params['gamma%d' % (i + 1)] = np.ones(hd)
+                self.params['beta%d' % (i + 1)] = np.zeros(hd)
+            layer_input_dim = hd
+        self.params['W%d' % self.num_layers] = weight_scale * np.random.randn(layer_input_dim, num_classes)
+        self.params['b%d' % self.num_layers] = np.zeros(num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -248,7 +258,18 @@ class FullyConnectedNet(object):
         # self.bn_params[1] to the forward pass for the second batch normalization #
         # layer, etc.                                                              #
         ############################################################################
-        pass
+        # pass
+        layer_input = X
+        ar_cache = {}
+        for i in range(self.num_layers - 1):
+            if self.use_batchnorm:
+                layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
+                                                               self.params['W%d' % (i + 1)], 'b%d' % (i + 1))
+            else:
+                layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
+                                                               self.params['W%d' % (i + 1)], 'b%d' % (i + 1))
+
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
