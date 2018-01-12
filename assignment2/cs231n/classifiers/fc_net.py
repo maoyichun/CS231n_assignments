@@ -192,7 +192,7 @@ class FullyConnectedNet(object):
         ############################################################################
         # pass
         layer_input_dim = input_dim
-        for i, hd in hidden_dims:
+        for i, hd in enumerate(hidden_dims):
             self.params['W%d' % (i + 1)] = weight_scale * np.random.randn(layer_input_dim, hd)
             self.params['b%d' % (i + 1)] = np.zeros(hd)
             if self.use_batchnorm:
@@ -264,12 +264,17 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers - 1):
             if self.use_batchnorm:
                 layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
-                                                               self.params['W%d' % (i + 1)], 'b%d' % (i + 1))
+                                                                   self.params['W%d' % (i + 1)],
+                                                                   self.params['b%d' % (i + 1)])
             else:
                 layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
-                                                               self.params['W%d' % (i + 1)], 'b%d' % (i + 1))
+                                                                   self.params['W%d' % (i + 1)],
+                                                                   self.params['b%d' % (i + 1)])
 
-        
+        ar_out, ar_cache[self.num_layers] = affine_forward(layer_input,
+                                                           self.params['W%d' % self.num_layers],
+                                                           self.params['b%d' % self.num_layers])
+        scores = ar_out
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -292,7 +297,27 @@ class FullyConnectedNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        #pass
+        loss, dscores = softmax_loss(scores, y)
+        dout = dscores
+
+        for i in range(self.num_layers):
+            loss += 0.5 * self.reg * np.sum(self.params['W%d' % (i + 1)] * self.params['W%d' % (i + 1)])
+
+        dX, dw, db = affine_backward(dout, ar_cache[self.num_layers])
+
+        grads['W%d' % self.num_layers] = dw + self.reg * self.params['W%d' % self.num_layers]
+        grads['b%d' % self.num_layers] = db
+
+        dout = dX
+
+        for i in range(self.num_layers - 1):
+            layer = self.num_layers - 1 - i
+            dX, dw, db = affine_relu_backward(dout, ar_cache[layer])
+            grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
+            grads['b%d' % layer] = db
+            dout = dX
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
