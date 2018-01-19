@@ -263,9 +263,12 @@ class FullyConnectedNet(object):
         ar_cache = {}
         for i in range(self.num_layers - 1):
             if self.use_batchnorm:
-                layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
-                                                                   self.params['W%d' % (i + 1)],
-                                                                   self.params['b%d' % (i + 1)])
+                layer_input, ar_cache[i + 1] = affine_bn_relu_forward(layer_input,
+                                                                      self.params['W%d' % (i + 1)],
+                                                                      self.params['b%d' % (i + 1)],
+                                                                      self.params['gamma%d' % (i + 1)],
+                                                                      self.params['beta%d' % (i + 1)],
+                                                                      self.bn_params[i])
             else:
                 layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
                                                                    self.params['W%d' % (i + 1)],
@@ -316,10 +319,18 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers - 1):
             loss += 0.5 * self.reg * np.sum(self.params['W%d' % (i + 1)] * self.params['W%d' % (i + 1)])
             layer = self.num_layers - 1 - i
-            dX, dw, db = affine_relu_backward(dout, ar_cache[layer])
-            grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
-            grads['b%d' % layer] = db
-            dout = dX
+            if self.use_batchnorm:
+                dX, dw, db, dgamma, dbeta = affine_bn_relu_backward(dout, ar_cache[layer])
+                grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
+                grads['b%d' % layer] = db
+                grads['gamma%d' % layer] = dgamma
+                grads['beta%d' % layer] = dbeta
+                dout = dX
+            else:
+                dX, dw, db = affine_relu_backward(dout, ar_cache[layer])
+                grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
+                grads['b%d' % layer] = db
+                dout = dX
 
         ############################################################################
         #                             END OF YOUR CODE                             #
