@@ -261,6 +261,7 @@ class FullyConnectedNet(object):
         # pass
         layer_input = X
         ar_cache = {}
+        dp_cache = {}
         for i in range(self.num_layers - 1):
             if self.use_batchnorm:
                 layer_input, ar_cache[i + 1] = affine_bn_relu_forward(layer_input,
@@ -273,6 +274,9 @@ class FullyConnectedNet(object):
                 layer_input, ar_cache[i + 1] = affine_relu_forward(layer_input,
                                                                    self.params['W%d' % (i + 1)],
                                                                    self.params['b%d' % (i + 1)])
+
+            if self.use_dropout:
+                layer_input, dp_cache[i + 1] = dropout_forward(layer_input, self.dropout_param)
 
         ar_out, ar_cache[self.num_layers] = affine_forward(layer_input,
                                                            self.params['W%d' % self.num_layers],
@@ -319,18 +323,23 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers - 1):
             loss += 0.5 * self.reg * np.sum(self.params['W%d' % (i + 1)] * self.params['W%d' % (i + 1)])
             layer = self.num_layers - 1 - i
+            if self.use_dropout:
+                dout = dropout_backward(dout, dp_cache[layer])
             if self.use_batchnorm:
                 dX, dw, db, dgamma, dbeta = affine_bn_relu_backward(dout, ar_cache[layer])
-                grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
-                grads['b%d' % layer] = db
+                # grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
+                # grads['b%d' % layer] = db
                 grads['gamma%d' % layer] = dgamma
                 grads['beta%d' % layer] = dbeta
                 dout = dX
             else:
                 dX, dw, db = affine_relu_backward(dout, ar_cache[layer])
-                grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
-                grads['b%d' % layer] = db
+                # grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
+                # grads['b%d' % layer] = db
                 dout = dX
+
+            grads['W%d' % layer] = dw + self.reg * self.params['W%d' % layer]
+            grads['b%d' % layer] = db
 
         ############################################################################
         #                             END OF YOUR CODE                             #
