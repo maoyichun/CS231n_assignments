@@ -578,7 +578,24 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # TODO: Implement the max pooling backward pass                           #
     ###########################################################################
-    pass
+    # pass
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    HH = pool_param['pool_height']
+    WW = pool_param['pool_width']
+    stride = pool_param['stride']
+    H_out = (H - HH) // stride + 1
+    W_out = (W - WW) // stride + 1
+    dx = np.zeros_like(x)
+
+    for i in range(H_out):
+        for j in range(W_out):
+            x_masked = x[:, :, i*stride:i*stride+HH, j*stride:j*stride+WW]
+            max_x_masked = np.max(x_masked, axis=(2, 3))
+            temp_binary_mask = (x_masked == max_x_masked[:, :, None, None])
+            dx[:, :, i*stride:i*stride+HH, j*stride:j*stride+WW] += \
+                temp_binary_mask * (dout[:, :, i, j])[:, :, None, None]
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -616,7 +633,10 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # version of batch normalization defined above. Your implementation should#
     # be very short; ours is less than five lines.                            #
     ###########################################################################
-    pass
+    # pass
+    N, C, H, W = x.shape
+    temp_out, cache = batchnorm_forward(x.transpose(0, 3, 2, 1).reshape((N*H*W, C)), gamma, beta, bn_param)
+    out = temp_out.reshape(N, W, H, C).transpose(0, 3, 2, 1)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -646,7 +666,10 @@ def spatial_batchnorm_backward(dout, cache):
     # version of batch normalization defined above. Your implementation should#
     # be very short; ours is less than five lines.                            #
     ###########################################################################
-    pass
+    # pass
+    N, C, H, W = dout.shape
+    dx_temp, dgamma, dbeta = batchnorm_backward_alt(dout.transpose(0, 3, 2, 1).reshape((N*H*W, C)), cache)
+    dx = dx_temp.reshape(N, W, H, C).transpose(0, 3, 2, 1)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
