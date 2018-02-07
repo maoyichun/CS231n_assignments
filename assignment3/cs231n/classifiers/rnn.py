@@ -137,7 +137,34 @@ class CaptioningRNN(object):
         # defined above to store loss and gradients; grads[k] should give the      #
         # gradients for self.params[k].                                            #
         ############################################################################
-        pass
+        # pass
+        # forward
+        # affine hidden state(N,D) -> (N,H)
+        affine, cache_affine = affine_forward(features, W_proj, b_proj)
+        # word embedding
+        embed, chahe_embed = word_embedding_forward(captions_in, W_embed)
+        # rnn
+        if self.cell_type == 'rnn':
+            h, cache_rnn = rnn_forward(embed, affine, Wx, Wh, b)
+        elif self.cell_type == 'lstm':
+            h, cache_rnn = lstm_forward(embed, affine, Wx, Wh, b)
+        # temporal_affine
+        h_affine, cache_h_affine = temporal_affine_forward(h, W_vocab, b_vocab)
+        # softmax
+        loss, dx = temporal_softmax_loss(h_affine, captions_out, mask)
+
+        # backward
+        # temporal_affine bp
+        dx, grads['W_vocab'], grads['b_vocab'] = temporal_affine_backward(dx, cache_h_affine)
+        # rnn bp
+        if self.cell_type == 'rnn':
+            dx, dh, grads['Wx'], grads['Wh'], grads['b'] = rnn_backward(dx, cache_rnn)
+        elif self.cell_type == 'lstm':
+            dx, dh, grads['Wx'], grads['Wh'], grads['b'] = lstm_backward(dx, cache_rnn)
+        # word embed bp
+        grads['W_embed'] = word_embedding_backward(dx, chahe_embed)
+        # affine bp
+        dx, grads['W_proj'], grads['b_proj'] = affine_backward(dh, cache_affine)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
